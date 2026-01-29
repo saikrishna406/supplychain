@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChainTrack | Modern Web3 Logistics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --chorke-green: #00f090;
+            --chorke-yellow: #fde047;
+            --chorke-pink: #fbcfe8;
+            --chorke-blue: #bae6fd;
+            --brutal-border: 2px solid #000;
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            margin: 0;
+            overflow-x: hidden;
+            /* Background Noise Grain Effect */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 150px 150px;
+            background-attachment: fixed;
+            opacity: 0.98;
+        }
+
+        .font-space {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .brutal-card-light {
+            background: #ffffff;
+            border: var(--brutal-border);
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .brutal-btn-pill {
+            border: var(--brutal-border);
+            border-radius: 9999px;
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            font-weight: 700;
+            padding: 0.75rem 2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: #fff;
+        }
+
+        .brutal-btn-pill:hover {
+            background: #000;
+            color: #fff;
+            transform: translate(-4px, -4px);
+            box-shadow: 6px 6px 0px #000;
+        }
+
+        .brutal-btn-pill:active {
+            transform: translate(0, 0);
+            box-shadow: 0px 0px 0px #000;
+        }
+
+        /* Text Mask Reveal Animation */
+        .text-reveal-wrapper {
+            overflow: hidden;
+            display: block;
+        }
+        
+        .text-reveal-content {
+            display: block;
+            transform: translateY(100%);
+            transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .active .text-reveal-content {
+            transform: translateY(0);
+        }
+
+        /* Scroll Parallax for Images */
+        .parallax-target {
+            transition: transform 0.2s linear;
+        }
+
+        /* Kinetic Typography Section Wrappers */
+        section {
+            border-bottom: var(--brutal-border);
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Reveal Base Classes */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Staggered Delay for children */
+        .reveal-stagger > *:nth-child(1) { transition-delay: 0.1s; }
+        .reveal-stagger > *:nth-child(2) { transition-delay: 0.2s; }
+        .reveal-stagger > *:nth-child(3) { transition-delay: 0.3s; }
+        .reveal-stagger > *:nth-child(4) { transition-delay: 0.4s; }
+
+        /* Marquee Ticker */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .marquee {
+            white-space: nowrap;
+            display: flex;
+            animation: marquee 25s linear infinite;
+        }
+
+        /* Floating Element */
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0% { transform: translate(0, 0px); }
+            50% { transform: translate(0, 15px); }
+            100% { transform: translate(0, -0px); }
+        }
+
+        /* Custom Organic Masks */
+        .mask-organic-1 {
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 70%;
+        }
+        .mask-flower {
+            border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

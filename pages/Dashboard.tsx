@@ -1,260 +1,330 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { AppState, User } from '../types';
-import { PlusCircle, ArrowRightCircle, Search, ShieldCheck, Smartphone, Activity, Globe, Loader2, Cpu, Hash, Info } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { AppState, User, PhoneRecord } from '../types';
+import { useNavigate } from 'react-router-dom';
+import {
+  Smartphone, ShieldCheck, Activity, Layers, Zap,
+  PlusCircle, ArrowRightCircle, Search, History,
+  Loader2, Filter, ChevronRight
+} from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface DashboardProps {
   user: User;
-  onNavigate: (state: AppState) => void;
+  onNavigate?: (state: AppState) => void;
 }
 
-const INITIAL_LEDGER = [
-  { id: '0x3a...12f', time: '2m ago', type: 'Transfer' },
-  { id: '0x8b...45e', time: '5m ago', type: 'Mint' },
-  { id: '0xfe...90a', time: '12m ago', type: 'Verify' },
-  { id: '0x12...56b', time: '24m ago', type: 'Transfer' },
-  { id: '0x99...cc2', time: '1h ago', type: 'Transfer' },
-];
-
-export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
-  const [ledgerItems, setLedgerItems] = useState(INITIAL_LEDGER);
-  const [isLoading, setIsLoading] = useState(false);
-  const observer = useRef<IntersectionObserver | null>(null);
+export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
+  const navigate = useNavigate();
   const dashboardRef = useRef<HTMLDivElement>(null);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
+  const [devices, setDevices] = useState<Partial<PhoneRecord>[]>([]);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const [stats, setStats] = useState({
+    activeAssets: 0,
+    nodeCount: 0,
+    myDevices: 0
+  });
+
+  // Fetch Stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // 1. Total Devices
+        const { count: devicesCount } = await supabase
+          .from('devices')
+          .select('*', { count: 'exact', head: true });
+
+        // 2. Total Nodes (Profiles)
+        const { count: nodesCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        setStats({
+          activeAssets: devicesCount || 0,
+          nodeCount: nodesCount || 0,
+          myDevices: 0
+        });
+
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // Fetch devices from Supabase
+  const fetchDevices = useCallback(async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+
+    try {
+      const from = page * 10;
+      const to = from + 9;
+
+      // Fetch paginated data
+      const { data, error } = await supabase
+        .from('devices')
+        .select('*')
+        .range(from, to)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching devices:', error);
+        return;
+      }
+
+      if (data) {
+        if (data.length < 10) {
+          setHasMore(false);
+        }
+
+        setDevices(prev => {
+          const newIds = new Set(data.map(d => d.id));
+          return [...prev.filter(p => !newIds.has(p.id!)), ...data];
+        });
+
+        setPage(p => p + 1);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, loading, hasMore]);
+
+  // Initial load
   useEffect(() => {
     if (dashboardRef.current) {
       dashboardRef.current.classList.add('active');
     }
+    fetchDevices();
   }, []);
 
-  const lastElementRef = useCallback((node: HTMLDivElement | null) => {
-    if (isLoading) return;
-    if (observer.current) observer.current.disconnect();
+  // Infinite Scroll Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchDevices();
+        }
+      },
+      { threshold: 0.1 }
+    );
 
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) {
-        loadMoreItems();
-      }
-    });
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
 
-    if (node) observer.current.observe(node);
-  }, [isLoading]);
-
-  const loadMoreItems = async () => {
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    
-    const newItems = [
-      { id: `0x${Math.random().toString(16).slice(2, 6)}...${Math.random().toString(16).slice(2, 5)}`, time: 'Earlier', type: ['Transfer', 'Mint', 'Verify'][Math.floor(Math.random() * 3)] },
-      { id: `0x${Math.random().toString(16).slice(2, 6)}...${Math.random().toString(16).slice(2, 5)}`, time: 'Earlier', type: ['Transfer', 'Mint', 'Verify'][Math.floor(Math.random() * 3)] },
-    ];
-    
-    setLedgerItems(prev => [...prev, ...newItems]);
-    setIsLoading(false);
-  };
+    return () => observer.disconnect();
+  }, [fetchDevices, hasMore, loading]);
 
   return (
-    <div ref={dashboardRef} className="reveal flex flex-col min-h-screen">
-      {/* Dynamic Header Section with High Contrast Typography */}
-      <section className="bg-white py-16 px-6 border-b-2 border-black overflow-hidden">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-10">
+    <div ref={dashboardRef} className="reveal-text flex flex-col min-h-screen px-8 md:px-16 py-16">
+      <div className="max-w-7xl mx-auto w-full space-y-24">
+
+        {/* Header HUD */}
+        <header className="flex flex-col md:flex-row justify-between items-end gap-12">
+          <div className="space-y-8">
+            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-ultra text-[#4D5DFB]">
+              <span className="w-2 h-2 bg-[#4D5DFB] rounded-full animate-ping"></span>
+              Core Protocol : Online
+            </div>
+            <h1 className="text-6xl md:text-[6.3rem] font-black text-[#1A1A1A] tracking-tighter uppercase italic leading-[0.85]">
+              Dashboard <br /> <span className="text-outline">Hub.</span>
+            </h1>
+            <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest max-w-sm">
+              Manage and track mobile phones on blockchain as {user.role}.
+            </p>
+          </div>
+
+          <div className="flex gap-6">
+            <div className="bg-white border border-zinc-100 px-10 py-6 rounded-[32px] text-center shadow-lg">
+              <span className="text-[9px] font-black uppercase tracking-ultra text-zinc-400 block mb-2">Network State</span>
+              <span className="font-black text-2xl text-[#4D5DFB] tracking-tighter">Verified</span>
+            </div>
+            <div className="bg-[#C6F052] px-10 py-6 rounded-[32px] text-center shadow-xl">
+              <span className="text-[9px] font-black uppercase tracking-ultra text-zinc-900/40 block mb-2">Account ID</span>
+              <span className="font-black text-2xl uppercase tracking-tighter">{user.address?.slice(0, 4)}...{user.address?.slice(-4)}</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Module Interface - 4 Actions from PRD */}
+        <div className="class-container bg-white shadow-2xl">
+          <div className="flex flex-col md:flex-row justify-between items-start mb-20 gap-8">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-ultra text-[#4D5DFB] mb-2">/ Operations</p>
+              <h2 className="text-5xl font-black text-[#1A1A1A] tracking-tighter uppercase italic">Protocol Modules</h2>
+            </div>
+            <div className="bg-zinc-50 px-8 py-3 rounded-full border border-zinc-100 text-[10px] font-black uppercase tracking-ultra text-zinc-400">
+              PRD Compliant v1.0
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+            <DashboardModule
+              title="Add Phone"
+              desc="Manufacturer: Register device IMEI and Model on-chain."
+              icon={<PlusCircle size={32} strokeWidth={1.5} />}
+              onClick={() => navigate('/add-phone')}
+            />
+            <DashboardModule
+              title="Transfer"
+              desc="Owner: Transfer ownership to new verified address."
+              icon={<ArrowRightCircle size={32} strokeWidth={1.5} />}
+              onClick={() => navigate('/transfer')}
+            />
+            <DashboardModule
+              title="Track History"
+              desc="View full cryptographic provenance and history."
+              icon={<History size={32} strokeWidth={1.5} />}
+              onClick={() => navigate('/track')}
+            />
+            <DashboardModule
+              title="Verify Unit"
+              desc="Public: Check authenticity of any IMEI instantly."
+              icon={<Search size={32} strokeWidth={1.5} />}
+              onClick={() => navigate('/verify')}
+              color="#C6F052"
+            />
+          </div>
+        </div>
+
+        {/* Infinite Scroll Registry Ledger */}
+        <div className="space-y-12">
+          <div className="flex justify-between items-end border-b border-zinc-100 pb-8">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-ultra text-[#4D5DFB] mb-2">/ Ledger</p>
+              <h2 className="text-4xl font-black uppercase italic tracking-tighter">Global Registry Feed</h2>
+            </div>
+            <div className="flex gap-4">
+              <button className="flex items-center gap-2 px-6 py-2 border border-zinc-100 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-zinc-50 transition-colors">
+                <Filter size={14} /> Filter
+              </button>
+              <button className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:brightness-125 transition-all">
+                <Activity size={14} /> Real-time
+              </button>
+            </div>
+          </div>
+
+          {devices.length === 0 && !loading ? (
+            <div className="text-center py-20 text-zinc-400 font-bold uppercase tracking-widest text-xs">
+              No devices found on the registry.
+            </div>
+          ) : (
             <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <span className="w-4 h-4 rounded-full bg-chorke-green border-2 border-black animate-pulse"></span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">System Monitoring Live</span>
-                </div>
-                <h1 className="font-space text-7xl md:text-9xl font-black uppercase tracking-tighter italic leading-none">
-                  CORE_OPS
-                </h1>
-                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest bg-black text-white px-2 py-1 inline-block">
-                  SESSION: {user.address?.slice(0, 16).toUpperCase()}_0xZ
-                </p>
-            </div>
-            <div className="flex gap-4 mb-2">
-                <button className="brutal-btn-pill bg-chorke-yellow text-[11px] uppercase italic">Download Ledger v.03</button>
-                <button className="brutal-btn-pill bg-white text-[11px] uppercase italic">Sync Topology</button>
-            </div>
-        </div>
-      </section>
-
-      {/* Kinetic Stats Section */}
-      <section className="bg-[#f8f8f8] py-20 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12">
-            {[
-              { label: 'Active Assets', value: '1,240,311', icon: <Smartphone />, color: 'bg-chorke-green' },
-              { label: 'Global Nodes', value: '45,219', icon: <Globe />, color: 'bg-chorke-blue' },
-              { label: 'Total Volume', value: '25.8M+', icon: <Activity />, color: 'bg-chorke-pink' },
-              { label: 'Security Grade', value: 'AAA+', icon: <ShieldCheck />, color: 'bg-chorke-yellow' }
-            ].map((stat, idx) => (
-              <div key={idx} className="group relative flex flex-col items-start cursor-pointer transition-transform hover:-translate-y-2">
-                <div className={`w-16 h-16 ${stat.color} border-2 border-black flex items-center justify-center mb-6 shadow-[6px_6px_0px_#000] group-hover:shadow-none transition-all`}>
-                    {stat.icon}
-                </div>
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-2 italic"> {stat.label} </p>
-                <p className="text-5xl font-space font-black group-hover:text-[#00f090] transition-colors tracking-tighter"> {stat.value} </p>
-                <div className="mt-4 w-full h-1 bg-black/10 rounded-full overflow-hidden">
-                    <div className={`h-full w-2/3 ${stat.color} transition-all duration-1000 group-hover:w-full`}></div>
-                </div>
-              </div>
-            ))}
-        </div>
-      </section>
-
-      {/* Action Modules */}
-      <section className="bg-white py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-6 mb-20 overflow-hidden">
-                <div className="p-4 bg-black text-white">
-                    <Cpu size={32} />
-                </div>
-                <h2 className="font-space text-5xl md:text-7xl font-black uppercase italic tracking-tighter">PROTO_MODULES</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <OperationCard 
-                    title="Initialize" 
-                    desc="MINT HARDWARE NFT TO GENESIS BLOCK." 
-                    tooltip="Securely generate a unique cryptographic ID for a new hardware unit on the Ethereum Layer 2 genesis block."
-                    icon={<PlusCircle size={24} />} 
-                    color="bg-chorke-green"
-                    onClick={() => onNavigate(AppState.ADD_PHONE)}
-                />
-                <OperationCard 
-                    title="Handoff" 
-                    desc="MUTATE OWNERSHIP CUSTODY STATES." 
-                    tooltip="Update the immutable ownership state as the device moves between manufacturer, distributor, and retailer."
-                    icon={<ArrowRightCircle size={24} />} 
-                    color="bg-chorke-blue"
-                    onClick={() => onNavigate(AppState.TRANSFER)}
-                />
-                <OperationCard 
-                    title="Inspect" 
-                    desc="QUERY CUSTODY PROVENANCE HISTORY." 
-                    tooltip="Retrieve the full, tamper-proof audit trail of this device's journey from factory floor to end-user."
-                    icon={<Search size={24} />} 
-                    color="bg-chorke-pink"
-                    onClick={() => onNavigate(AppState.TRACK)}
-                />
-                <OperationCard 
-                    title="Audit" 
-                    desc="PERFORM CRYPTOGRAPHIC TRUTH AUDIT." 
-                    tooltip="Execute a multi-point cryptographic check to ensure device authenticity and verify anti-counterfeit signatures."
-                    icon={<ShieldCheck size={24} />} 
-                    color="bg-chorke-yellow"
-                    onClick={() => onNavigate(AppState.VERIFY)}
-                />
-            </div>
-        </div>
-      </section>
-
-      {/* Infinite Ledger with Kinetic UI */}
-      <section className="bg-chorke-blue py-32 px-6 relative overflow-hidden">
-        <div className="max-w-5xl mx-auto">
-             <div className="bg-white border-4 border-black rounded-none overflow-hidden shadow-[20px_20px_0px_#000]">
-                <div className="p-10 border-b-4 border-black bg-black text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div>
-                        <h3 className="font-space font-black uppercase tracking-tighter text-3xl italic">LEDGER_STREAM</h3>
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-[#00f090]">Sync Status: Normal</span>
-                        </div>
+              {devices.map((device, index) => (
+                <div
+                  key={`${device.id}-${index}`}
+                  className="group flex flex-col md:flex-row items-center justify-between p-8 bg-white border border-zinc-100 rounded-[32px] hover:shadow-xl hover:scale-[1.01] transition-all animate-in slide-in-from-bottom-4 fade-in duration-500"
+                >
+                  <div className="flex items-center gap-8 w-full md:w-auto">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${device.status === 'Manufactured' ? 'bg-[#4D5DFB]/10 text-[#4D5DFB]' : 'bg-[#C6F052]/20 text-[#1A1A1A]'}`}>
+                      <Smartphone size={24} strokeWidth={1.5} />
                     </div>
-                    <div className="flex items-center gap-4 bg-zinc-900 p-3 border-2 border-white/10">
-                        <Hash size={16} className="text-[#00f090]" />
-                        <span className="font-mono text-xs uppercase tracking-widest">CHAIN_HT: 19842031</span>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-zinc-300 uppercase tracking-ultra">IMEI IDENTIFIER</p>
+                      <p className="text-sm font-black font-mono tracking-widest">{device.imei}</p>
                     </div>
-                </div>
-                
-                <div className="max-h-[700px] overflow-y-auto scrollbar-hide">
-                    <div className="divide-y-4 divide-black">
-                        {ledgerItems.map((tx, idx) => (
-                          <div 
-                            key={idx} 
-                            ref={idx === ledgerItems.length - 1 ? lastElementRef : null}
-                            className="p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 hover:bg-[#f8f8f8] transition-colors cursor-pointer group"
-                          >
-                            <div className="flex items-center gap-8">
-                                <div className="w-16 h-16 border-4 border-black bg-white flex items-center justify-center font-space font-black text-xl group-hover:bg-[#00f090] transition-colors shadow-[6px_6px_0px_#000] group-hover:shadow-none">
-                                    {idx + 1}
-                                </div>
-                                <div>
-                                    <p className="font-space font-black text-2xl uppercase tracking-tight italic">{tx.type}</p>
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <p className="text-[11px] text-gray-400 font-mono tracking-widest uppercase truncate max-w-[150px]">SIG: {tx.id}</p>
-                                        <div className="w-2 h-2 rounded-full bg-chorke-green"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex md:flex-col items-center md:items-end gap-6 md:gap-2 w-full md:w-auto">
-                                <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em]">{tx.time}</span>
-                                <div className="px-4 py-2 bg-black text-white text-[9px] font-black uppercase tracking-widest italic border-2 border-black">VERIFIED_TX</div>
-                            </div>
-                          </div>
-                        ))}
+                  </div>
+
+                  <div className="hidden lg:block space-y-1">
+                    <p className="text-[10px] font-black text-zinc-300 uppercase tracking-ultra">MODEL</p>
+                    <p className="text-sm font-bold uppercase">{device.model}</p>
+                  </div>
+
+                  <div className="hidden md:block space-y-1">
+                    <p className="text-[10px] font-black text-zinc-300 uppercase tracking-ultra">STATUS</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${device.status === 'Manufactured' ? 'bg-[#4D5DFB]' : 'bg-[#C6F052]'}`}></span>
+                      <p className="text-sm font-black italic uppercase text-zinc-500">{device.status}</p>
                     </div>
-                    {isLoading && (
-                        <div className="p-16 flex flex-col items-center justify-center gap-6 bg-[#f8f8f8] border-t-4 border-black">
-                            <Loader2 className="animate-spin text-black" size={48} />
-                            <p className="text-xs font-black uppercase tracking-[0.5em] animate-pulse">READING_NEW_BLOCKS...</p>
-                        </div>
-                    )}
+                  </div>
+
+                  <div className="flex items-center gap-6 mt-6 md:mt-0 w-full md:w-auto justify-end">
+                    <p className="text-[9px] font-black text-zinc-300 uppercase">
+                      {device.timestamp ? new Date(device.timestamp).toLocaleTimeString() : 'Unknown'}
+                    </p>
+                    <button className="w-10 h-10 rounded-full border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-[#4D5DFB] group-hover:text-white transition-all">
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
                 </div>
-             </div>
-             
-             <div className="mt-16 text-center">
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.8em]">End of Protocol Access</p>
-             </div>
+              ))}
+            </div>
+          )}
+
+          {/* Observer Target / Loading Indicator */}
+          <div
+            ref={observerTarget}
+            className="py-10 flex flex-col items-center justify-center space-y-6"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={32} className="animate-spin text-[#4D5DFB]" />
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 animate-pulse">Syncing Blockchain Data...</p>
+              </>
+            ) : (
+              hasMore && <div className="w-1.5 h-1.5 rounded-full bg-zinc-200"></div>
+            )}
+          </div>
         </div>
-      </section>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white border border-zinc-50 p-10 rounded-[48px] flex flex-col justify-between h-56 hover:shadow-2xl hover:-translate-y-2 transition-all group">
+            <div className="flex justify-between items-start">
+              <div className="p-4 bg-zinc-50 rounded-2xl text-zinc-400 group-hover:text-[#4D5DFB] transition-colors"><Smartphone size={24} /></div>
+              <div className="text-[9px] font-black uppercase tracking-ultra text-zinc-300 group-hover:text-zinc-500">Active Assets</div>
+            </div>
+            <div className="text-5xl font-black tracking-tighter text-[#1A1A1A]">{stats.activeAssets}</div>
+          </div>
+
+          <div className="bg-white border border-zinc-50 p-10 rounded-[48px] flex flex-col justify-between h-56 hover:shadow-2xl hover:-translate-y-2 transition-all group">
+            <div className="flex justify-between items-start">
+              <div className="p-4 bg-zinc-50 rounded-2xl text-zinc-400 group-hover:text-[#4D5DFB] transition-colors"><Layers size={24} /></div>
+              <div className="text-[9px] font-black uppercase tracking-ultra text-zinc-300 group-hover:text-zinc-500">Node Count</div>
+            </div>
+            <div className="text-5xl font-black tracking-tighter text-[#1A1A1A]">{stats.nodeCount}</div>
+          </div>
+
+          <div className="bg-white border border-zinc-50 p-10 rounded-[48px] flex flex-col justify-between h-56 hover:shadow-2xl hover:-translate-y-2 transition-all group">
+            <div className="flex justify-between items-start">
+              <div className="p-4 bg-zinc-50 rounded-2xl text-zinc-400 group-hover:text-[#4D5DFB] transition-colors"><Activity size={24} /></div>
+              <div className="text-[9px] font-black uppercase tracking-ultra text-zinc-300 group-hover:text-zinc-500">System Status</div>
+            </div>
+            <div className="text-5xl font-black tracking-tighter text-[#1A1A1A]">ONLINE</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-const OperationCard: React.FC<{ 
-  title: string; 
-  desc: string; 
-  tooltip: string;
-  icon: React.ReactNode; 
-  color: string;
-  onClick: () => void;
-}> = ({ title, desc, tooltip, icon, color, onClick }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <button 
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col p-12 border-4 border-black rounded-none bg-white hover:bg-[#f8f8f8] transition-all text-left shadow-[12px_12px_0px_#000] hover:shadow-none hover:translate-x-2 hover:translate-y-2 relative overflow-hidden h-[400px]"
-    >
-      <div className={`w-16 h-16 ${color} border-4 border-black flex items-center justify-center mb-10 group-hover:scale-125 group-hover:-rotate-12 transition-all duration-500 shadow-[6px_6px_0px_#000] group-hover:shadow-none`}>
-        <div className={`${isHovered ? 'animate-bounce' : ''}`}>
-          {icon}
-        </div>
+const DashboardModule: React.FC<{ title: string; desc: string; icon: React.ReactNode; color?: string; onClick: () => void }> = ({ title, desc, icon, color = '#4D5DFB', onClick }) => (
+  <button
+    onClick={onClick}
+    className="class-card group flex flex-col gap-8 text-left h-[300px] justify-between p-10 border-none shadow-sm hover:shadow-xl"
+  >
+    <div className="flex justify-between items-start">
+      <div
+        className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all group-hover:text-white group-hover:-rotate-6"
+        style={{ backgroundColor: '#F2F2EB', color: '#1A1A1A' }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = color === '#C6F052' ? '#C6F052' : '#4D5DFB')}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F2F2EB')}
+      >
+        {icon}
       </div>
-      
-      <div className="space-y-4">
-        <h3 className="font-space text-3xl font-black mb-4 uppercase tracking-tighter italic group-hover:text-black">{title}</h3>
-        
-        {/* Normal Description */}
-        <p className={`text-[10px] font-bold text-gray-400 uppercase leading-loose tracking-[0.2em] transition-all duration-500 ${isHovered ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
-          {desc}
-        </p>
-        
-        {/* Tooltip Detailed Description - Slides in from bottom */}
-        <div className={`absolute left-12 right-12 bottom-12 transition-all duration-500 transform ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
-          <div className="bg-black text-white p-4 border-2 border-black flex items-start gap-3 shadow-[4px_4px_0px_#00f090]">
-            <Info size={16} className="text-chorke-green shrink-0 mt-1" />
-            <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed italic">
-              {tooltip}
-            </p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="absolute top-4 right-4 text-[10px] font-black opacity-10 uppercase tracking-widest">PRTC_MOD_0{Math.floor(Math.random() * 9)}</div>
-      
-      {/* Decorative corner accent */}
-      <div className={`absolute top-0 right-0 w-8 h-8 bg-black transition-all duration-300 ${isHovered ? 'translate-x-0 translate-y-0' : 'translate-x-8 -translate-y-8'}`} style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}></div>
-    </button>
-  );
-};
+      <div className="text-[9px] font-black uppercase tracking-ultra opacity-20 group-hover:opacity-100 transition-opacity">Active</div>
+    </div>
+    <div className="space-y-1">
+      <h4 className="text-3xl font-black mb-1 tracking-tighter uppercase italic">{title}</h4>
+      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-ultra leading-relaxed">{desc}</p>
+    </div>
+  </button>
+);

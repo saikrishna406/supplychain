@@ -4,152 +4,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChainTrack | Modern Web3 Logistics</title>
+    <title>ChainTrack | Level Up Your Supply Chain</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700;1,800&family=Inter:wght@400;500;600;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --chorke-green: #00f090;
-            --chorke-yellow: #fde047;
-            --chorke-pink: #fbcfe8;
-            --chorke-blue: #bae6fd;
-            --brutal-border: 2px solid #000;
+            --cream: #F2F2EB;
+            --soft-white: #FFFFFF;
+            --bold-blue: #4D5DFB;
+            --lime: #C6F052;
+            --dark: #1A1A1A;
+            --grey-bg: #E8E8E3;
         }
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #ffffff;
-            color: #000000;
+            background-color: var(--cream);
+            color: var(--dark);
             margin: 0;
             overflow-x: hidden;
-            /* Background Noise Grain Effect */
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            background-repeat: repeat;
-            background-size: 150px 150px;
-            background-attachment: fixed;
-            opacity: 0.98;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .font-space {
-            font-family: 'Space Grotesk', sans-serif;
+        .hero-title {
+            font-weight: 800;
+            line-height: 0.9;
+            letter-spacing: -0.06em;
+            text-transform: uppercase;
         }
 
-        .brutal-card-light {
-            background: #ffffff;
-            border: var(--brutal-border);
-            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        .text-outline {
+            -webkit-text-stroke: 1.5px var(--dark);
+            color: transparent;
         }
 
-        .brutal-btn-pill {
-            border: var(--brutal-border);
+        .text-outline-white {
+            -webkit-text-stroke: 1px rgba(255,255,255,0.3);
+            color: transparent;
+        }
+
+        .tracking-ultra {
+            letter-spacing: 0.5em;
+        }
+
+        .btn-pill {
+            background-color: var(--soft-white);
+            color: var(--dark);
+            padding: 0.6rem 1.5rem;
             border-radius: 9999px;
-            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-            font-weight: 700;
-            padding: 0.75rem 2rem;
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(0,0,0,0.1);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-pill:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .btn-pill-lime {
+            background-color: var(--lime);
+            border: none;
+        }
+
+        .asterisk {
+            font-size: 3.5rem;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .illu-card {
+            border-radius: 32px;
+            overflow: hidden;
+            aspect-ratio: 1/1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .illu-card:hover {
+            transform: translateY(-12px) rotate(2deg);
+        }
+
+        .class-container {
+            background-color: var(--grey-bg);
+            border-radius: 60px;
+            padding: 4rem;
+        }
+
+        .class-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 32px;
+            padding: 2.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .class-card:hover {
+            box-shadow: 0 20px 40px rgba(77, 93, 251, 0.1);
+            transform: translateY(-8px);
+        }
+
+        .pill-shape {
+            display: inline-block;
+            border: 2px solid var(--dark);
+            border-radius: 999px;
+            padding: 0 1.5rem;
+            font-style: italic;
+        }
+
+        .arrow-pill {
+            background-color: var(--lime);
+            color: var(--dark);
+            width: 100px;
+            height: 45px;
+            border-radius: 999px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            background: #fff;
-        }
-
-        .brutal-btn-pill:hover {
-            background: #000;
-            color: #fff;
-            transform: translate(-4px, -4px);
-            box-shadow: 6px 6px 0px #000;
-        }
-
-        .brutal-btn-pill:active {
-            transform: translate(0, 0);
-            box-shadow: 0px 0px 0px #000;
-        }
-
-        /* Text Mask Reveal Animation */
-        .text-reveal-wrapper {
-            overflow: hidden;
-            display: block;
-        }
-        
-        .text-reveal-content {
-            display: block;
-            transform: translateY(100%);
-            transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1);
-        }
-
-        .active .text-reveal-content {
-            transform: translateY(0);
-        }
-
-        /* Scroll Parallax for Images */
-        .parallax-target {
-            transition: transform 0.2s linear;
-        }
-
-        /* Kinetic Typography Section Wrappers */
-        section {
-            border-bottom: var(--brutal-border);
+            font-size: 1.5rem;
+            margin: 0 0.5rem;
             position: relative;
-            z-index: 10;
+            overflow: hidden;
         }
-        
-        /* Reveal Base Classes */
-        .reveal {
+
+        /* Base Reveal Animations */
+        .reveal-text {
             opacity: 0;
             transform: translateY(40px);
-            transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+            transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1), 
+                        transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        
-        .reveal.active {
+
+        .reveal-text.active {
             opacity: 1;
             transform: translateY(0);
         }
 
-        /* Staggered Delay for children */
-        .reveal-stagger > *:nth-child(1) { transition-delay: 0.1s; }
-        .reveal-stagger > *:nth-child(2) { transition-delay: 0.2s; }
-        .reveal-stagger > *:nth-child(3) { transition-delay: 0.3s; }
-        .reveal-stagger > *:nth-child(4) { transition-delay: 0.4s; }
-
-        /* Marquee Ticker */
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        .marquee {
-            white-space: nowrap;
-            display: flex;
-            animation: marquee 25s linear infinite;
+        .reveal-stagger > * {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1), 
+                        transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        /* Floating Element */
-        .floating {
-            animation: floating 3s ease-in-out infinite;
-        }
-        @keyframes floating {
-            0% { transform: translate(0, 0px); }
-            50% { transform: translate(0, 15px); }
-            100% { transform: translate(0, -0px); }
+        .reveal-stagger.active > * {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        /* Custom Organic Masks */
-        .mask-organic-1 {
-            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
-            border-radius: 40% 60% 70% 30% / 40% 50% 60% 70%;
-        }
-        .mask-flower {
-            border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
-        }
+        .reveal-stagger.active > *:nth-child(1) { transition-delay: 0.1s; }
+        .reveal-stagger.active > *:nth-child(2) { transition-delay: 0.2s; }
+        .reveal-stagger.active > *:nth-child(3) { transition-delay: 0.3s; }
+        .reveal-stagger.active > *:nth-child(4) { transition-delay: 0.4s; }
+        .reveal-stagger.active > *:nth-child(5) { transition-delay: 0.5s; }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
 </script>

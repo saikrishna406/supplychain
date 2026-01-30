@@ -1,75 +1,89 @@
 
 import React, { useState } from 'react';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { LandingPage } from './pages/LandingPage';
 import { Dashboard } from './pages/Dashboard';
 import { Forms } from './pages/Forms';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import { AppState, User } from './types';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<AppState>(AppState.LANDING);
   const [user, setUser] = useState<User>({
     address: null,
     isConnected: false,
     role: 'Guest'
   });
 
-  const connectWallet = async () => {
-    // Check if we need to open the selector
-    if (typeof window.aistudio !== 'undefined') {
-       const hasKey = await window.aistudio.hasSelectedApiKey();
-       if (!hasKey) {
-          await window.aistudio.openSelectKey();
-       }
-    }
+  const navigate = useNavigate();
 
-    // Mock wallet connection
-    setUser({
-      address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
-      isConnected: true,
-      role: 'Manufacturer'
-    });
-    
-    // Once connected, institutional users land on dashboard
-    setActiveTab(AppState.DASHBOARD);
+  // Called after successful Supabase Login/Register
+  const handleAuthSuccess = (authenticatedUser: User) => {
+    setUser(authenticatedUser);
+    if (authenticatedUser.role === 'Manufacturer') {
+      navigate('/dashboard');
+    } else {
+      navigate('/verify');
+    }
   };
 
-  const navigate = (state: AppState) => {
-    // Business rule: Only VERIFY and LANDING are accessible without a wallet
-    if (!user.isConnected && ![AppState.LANDING, AppState.VERIFY].includes(state)) {
-      connectWallet();
-      return;
+  const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+    if (!user.isConnected) {
+      return <Navigate to="/login" replace />;
     }
-    setActiveTab(state);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return children;
   };
 
   return (
-    <Layout 
-      user={user} 
-      onConnect={connectWallet} 
-      onNavigate={navigate}
-      activeTab={activeTab}
-    >
-      {activeTab === AppState.LANDING && (
-        <LandingPage 
-          onStart={connectWallet} 
-          onVerify={() => navigate(AppState.VERIFY)}
-          onNavigate={navigate} 
-        />
-      )}
+    <Layout user={user} onConnect={() => navigate('/login')}>
+      <Routes>
+        <Route path="/" element={
+          <LandingPage
+            onStart={() => navigate('/login')}
+            onVerify={() => navigate('/verify')}
+            onNavigate={(state) => { /* Legacy prop, ideally remove */ }}
+          />
+        } />
 
-      {activeTab === AppState.DASHBOARD && (
-        <Dashboard user={user} onNavigate={navigate} />
-      )}
+        <Route path="/login" element={
+          <Login
+            onLoginSuccess={handleAuthSuccess}
+            onNavigate={(state) => { /* Legacy */ }}
+          />
+        } />
 
-      {[AppState.ADD_PHONE, AppState.TRANSFER, AppState.TRACK, AppState.VERIFY].includes(activeTab) && (
-        <Forms 
-          type={activeTab} 
-          user={user}
-          onBack={() => navigate(user.isConnected ? AppState.DASHBOARD : AppState.LANDING)} 
-        />
-      )}
+        <Route path="/register" element={
+          <Register
+            onLoginSuccess={handleAuthSuccess}
+            onNavigate={(state) => { /* Legacy */ }}
+          />
+        } />
+
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard user={user} onNavigate={(state) => { /* Legacy */ }} />
+          </ProtectedRoute>
+        } />
+
+        {/* Forms Routes */}
+        <Route path="/add-phone" element={
+          <ProtectedRoute>
+            <Forms type={AppState.ADD_PHONE} user={user} onBack={() => navigate('/dashboard')} />
+          </ProtectedRoute>
+        } />
+        <Route path="/transfer" element={
+          <ProtectedRoute>
+            <Forms type={AppState.TRANSFER} user={user} onBack={() => navigate('/dashboard')} />
+          </ProtectedRoute>
+        } />
+        <Route path="/track" element={
+          <Forms type={AppState.TRACK} user={user} onBack={() => navigate('/')} />
+        } />
+        <Route path="/verify" element={
+          <Forms type={AppState.VERIFY} user={user} onBack={() => navigate('/')} />
+        } />
+      </Routes>
     </Layout>
   );
 }

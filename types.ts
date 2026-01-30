@@ -1,6 +1,7 @@
-
 export enum AppState {
   LANDING = 'LANDING',
+  LOGIN = 'LOGIN',
+  REGISTER = 'REGISTER',
   DASHBOARD = 'DASHBOARD',
   ADD_PHONE = 'ADD_PHONE',
   TRANSFER = 'TRANSFER',

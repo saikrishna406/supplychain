@@ -123,6 +123,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     return () => observer.disconnect();
   }, [fetchDevices, hasMore, loading]);
 
+  const SkeletonRow = () => (
+    <div className="flex flex-col md:flex-row items-center justify-between p-8 bg-white border border-zinc-100 rounded-[32px] animate-pulse">
+      <div className="flex items-center gap-8 w-full md:w-auto">
+        <div className="w-12 h-12 rounded-2xl bg-zinc-100"></div>
+        <div className="space-y-2">
+          <div className="h-3 w-20 bg-zinc-100 rounded-full"></div>
+          <div className="h-4 w-40 bg-zinc-200 rounded-full"></div>
+        </div>
+      </div>
+      <div className="hidden lg:block space-y-2">
+        <div className="h-3 w-16 bg-zinc-100 rounded-full"></div>
+        <div className="h-4 w-24 bg-zinc-200 rounded-full"></div>
+      </div>
+      <div className="hidden md:block space-y-2">
+        <div className="h-3 w-16 bg-zinc-100 rounded-full"></div>
+        <div className="h-4 w-24 bg-zinc-100 rounded-full"></div>
+      </div>
+      <div className="w-10 h-10 rounded-full bg-zinc-100"></div>
+    </div>
+  );
+
   return (
     <div ref={dashboardRef} className="reveal-text flex flex-col min-h-screen px-8 md:px-16 py-16">
       <div className="max-w-7xl mx-auto w-full space-y-24">
@@ -212,7 +233,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          {devices.length === 0 && !loading ? (
+          {loading && devices.length === 0 ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => <SkeletonRow key={i} />)}
+            </div>
+          ) : devices.length === 0 ? (
             <div className="text-center py-20 text-zinc-400 font-bold uppercase tracking-widest text-xs">
               No devices found on the registry.
             </div>
@@ -221,7 +246,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               {devices.map((device, index) => (
                 <div
                   key={`${device.id}-${index}`}
-                  className="group flex flex-col md:flex-row items-center justify-between p-8 bg-white border border-zinc-100 rounded-[32px] hover:shadow-xl hover:scale-[1.01] transition-all animate-in slide-in-from-bottom-4 fade-in duration-500"
+                  onClick={() => navigate(`/verify?imei=${device.imei}`)}
+                  className="group flex flex-col md:flex-row items-center justify-between p-8 bg-white border border-zinc-100 rounded-[32px] hover:shadow-xl hover:scale-[1.01] transition-all animate-in slide-in-from-bottom-4 fade-in duration-500 cursor-pointer"
                 >
                   <div className="flex items-center gap-8 w-full md:w-auto">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${device.status === 'Manufactured' ? 'bg-[#4D5DFB]/10 text-[#4D5DFB]' : 'bg-[#C6F052]/20 text-[#1A1A1A]'}`}>

@@ -4,10 +4,14 @@ import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { LandingPage } from './pages/LandingPage';
 import { Dashboard } from './pages/Dashboard';
+import { AddPhone } from './pages/AddPhone';
+import { Verify } from './pages/Verify';
+import { Transfer } from './pages/Transfer';
 import { Forms } from './pages/Forms';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { AppState, User } from './types';
+import { Toaster } from 'react-hot-toast';
 
 export default function App() {
   const [user, setUser] = useState<User>({
@@ -28,15 +32,21 @@ export default function App() {
     }
   };
 
-  const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const ProtectedRoute = ({ children, allowedRoles }: { children: JSX.Element; allowedRoles?: string[] }) => {
     if (!user.isConnected) {
       return <Navigate to="/login" replace />;
     }
+
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      return <Navigate to="/dashboard" replace />;
+    }
+
     return children;
   };
 
   return (
     <Layout user={user} onConnect={() => navigate('/login')}>
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={
           <LandingPage
@@ -68,20 +78,20 @@ export default function App() {
 
         {/* Forms Routes */}
         <Route path="/add-phone" element={
-          <ProtectedRoute>
-            <Forms type={AppState.ADD_PHONE} user={user} onBack={() => navigate('/dashboard')} />
+          <ProtectedRoute allowedRoles={['Manufacturer']}>
+            <AddPhone user={user} />
           </ProtectedRoute>
         } />
         <Route path="/transfer" element={
           <ProtectedRoute>
-            <Forms type={AppState.TRANSFER} user={user} onBack={() => navigate('/dashboard')} />
+            <Transfer user={user} />
           </ProtectedRoute>
         } />
         <Route path="/track" element={
-          <Forms type={AppState.TRACK} user={user} onBack={() => navigate('/')} />
+          <Verify user={user} />
         } />
         <Route path="/verify" element={
-          <Forms type={AppState.VERIFY} user={user} onBack={() => navigate('/')} />
+          <Verify user={user} />
         } />
       </Routes>
     </Layout>

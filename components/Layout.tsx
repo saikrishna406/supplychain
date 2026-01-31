@@ -19,7 +19,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onConnect }) => 
   return (
     <div className="min-h-screen flex flex-col bg-[#F2F2EB]">
       {/* Navigation */}
-      <nav className="w-full px-8 md:px-16 py-10 z-50">
+      <nav className="sticky top-0 w-full px-8 md:px-16 py-6 z-50 bg-[#F2F2EB]/80 backdrop-blur-md transition-all">
         <div className="max-w-7xl mx-auto flex justify-between items-center text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
           <div className="flex gap-12">
             <button onClick={() => navigate('/')} className={`hover:text-black transition-colors ${isActive('/') ? 'text-black' : ''}`}>Home</button>
@@ -41,7 +41,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onConnect }) => 
               className="btn-pill px-8 py-3 shadow-xl flex items-center gap-2"
             >
               {user.isConnected ? (
-                <span className="text-[#4D5DFB]">ID: {user.address?.slice(0, 6)}...</span>
+                <span className="text-[#4D5DFB]">ID: {user.address?.slice(0, 6)}...{user.address?.slice(-4)}</span>
               ) : (
                 <>
                   Login / Connect <ArrowUpRight size={14} />
